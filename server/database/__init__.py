@@ -10,7 +10,7 @@ links = Table(
     Column("idL", Integer, autoincrement=True, primary_key=True),
     Column("link", Text),
     Column("linkWasScraped", Boolean),
-    Column("linkScrapeDate", DATETIME),
-    Column("linkScrapeCurrentStep", Text))
+    Column("linkIsNowScraped", Text),
+    Column("linkInsertDate", DATETIME))
 
 

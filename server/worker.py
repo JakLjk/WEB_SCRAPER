@@ -5,11 +5,10 @@ import time
 from sqlalchemy.orm import scoped_session
 
 from config.TEMP_unique_key import TEST_KEY
-from config.metadata import serverRequests
-from config.metadata import clientRequests
+from config.metadata import serverRequests, clientRequests, commonRequests
 from shared.objects.communication import Communication
 from shared.methods.hashed_pickle import sign_message, verified_message
-from .database.operations.fetch_and_retrieve_link import get_link_from_db 
+from .database.operations.fetch_and_retrieve_link import get_link_from_db, pass_link_to_db
 from sqlalchemy.exc import NoResultFound
 
 server_log = logging.getLogger("SERV_LOG")
@@ -51,6 +50,15 @@ def init_worker_routine(workers_url:str,
             server_log.info("Passing information back to client")
             comm.set_comm_details(command=serverRequests.send_link,
                                   data_to_pass=link)
+            signed_message=sign_message(TEST_KEY, comm)
+            socket.send_json(signed_message)
+
+        if requested_command == clientRequests.pass_link_batch:
+            server_log.info("Client is passing link batch")
+            server_log.info(f"Passing {len(message.get_data())} links to the database")
+            pass_link_to_db(active_session, message.get_data())
+
+            comm.set_comm_details(commonRequests.query_ok)
             signed_message=sign_message(TEST_KEY, comm)
             socket.send_json(signed_message)
         

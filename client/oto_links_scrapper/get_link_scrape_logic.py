@@ -1,6 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-
+from bs4 import BeautifulSoup
 from .scraper_utils import pick_selenium_driver, close_popup
 from config.client_config import seleniumConfig
 
@@ -21,7 +21,7 @@ def get_link_for_all_pages_in_range_price(min_price:int,
                                 num_pages:int):
     LINK = """https://www.otomoto.pl/osobowe?search[filter_float_price%3Afrom]={}&search[filter_float_price%3Ato]={}&page={}"""
     for curr_page_num in range(num_pages, 0, -1):
-        yield LINK.format(min_price, max_price, curr_page_num)
+        yield LINK.format(min_price, max_price, curr_page_num), curr_page_num
 
 
 def get_num_of_pages(link:str):
@@ -40,8 +40,17 @@ def get_num_of_pages(link:str):
     else:
         last_page = last_page_num[-1].text
         driver.quit()
-        return last_page
+        return int(last_page)
 
 
 def get_offer_links_from_specified_page(link) -> list:
-    pass
+    driver = pick_selenium_driver(seleniumConfig.browser_type,
+                                  seleniumConfig.run_headless)
+    driver.get(link)
+    source = driver.page_source
+    driver.quit()
+
+    soup = BeautifulSoup(source, "html.parser")
+    link_boxes = soup.find_all("h1", {"class":"e1ajxysh9 ooa-1ed90th er34gjf0"})
+    return [elem.find("a")["href"] for elem in link_boxes]
+

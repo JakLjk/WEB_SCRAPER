@@ -1,9 +1,14 @@
 class clientRequests:
     get_link = "getLink"
+    pass_link_batch = "passLinkBatch"
 
 
 class serverRequests:
     send_link = "sendLink"
+
+class commonRequests:
+    query_ok = "statusOk"
+    query_not_ok = "statusNotOk"
 
 
 class dbFieldsDefinitions:
