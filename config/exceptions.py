@@ -3,3 +3,6 @@ class ServerNegativeResponse(Exception):
 
 class ServerUnknownResponse(Exception):
     pass
+
+class UnsupportedPageLayout(Exception):
+    pass

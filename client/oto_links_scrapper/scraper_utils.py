@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 from config.client_config import seleniumConfig
 
@@ -30,9 +31,14 @@ def pick_selenium_driver(browser_type="firefox", headless=True) -> WebDriver:
         return None
     
 
-def close_popup(driver:WebDriver, id_identifier:str):
-    privacy_button = (WebDriverWait(driver, seleniumConfig.popup_load_wait_time_s)
-                    .until(EC.presence_of_element_located((By.ID, id_identifier))))
-    privacy_button.click()
+def close_popup(driver:WebDriver, id_identifier:str, ignore_if_failed=True):
+    try:
+        privacy_button = (WebDriverWait(driver, seleniumConfig.popup_load_wait_time_s)
+                        .until(EC.presence_of_element_located((By.ID, id_identifier))))
+        privacy_button.click()
+    except TimeoutException:
+        if not ignore_if_failed:
+            raise TimeoutException("Locating popup failed")
+        
     
 
