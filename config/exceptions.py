@@ -6,3 +6,9 @@ class ServerUnknownResponse(Exception):
 
 class UnsupportedPageLayout(Exception):
     pass
+
+class DeadOfferLink(Exception):
+    pass
+
+class NoMapElementLoaded(Exception):
+    pass

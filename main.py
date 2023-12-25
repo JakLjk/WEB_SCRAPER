@@ -18,8 +18,8 @@ def main():
     
     elif "-c" in user_args:
         main_log.info("Initialising client")
-        launch_client(work_type="mineLinks")
-        # launch_client(work_type="mineOffers")
+        # launch_client(work_type="mineLinks")
+        launch_client(work_type="mineOffers")
 
     else:
         main_log.info("No proper arguments passed - quitting")
@@ -28,7 +28,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-    
+# TODO after mining links finishes do cleanup of duplicates.    
 
 # TODO worker and DB connector
     

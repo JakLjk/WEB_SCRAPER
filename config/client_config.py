@@ -2,10 +2,11 @@ class clientConfig:
     server_ip_port:str = "localhost:4123"
 
 class seleniumConfig:
-    run_headless = True
+    run_headless = False
     browser_type = "firefox"
-    popup_load_wait_time_s = 5
-    page_js_load_time_s = 3.5
+    wait_before_script = 0.6
+    popup_load_wait_time_s = 3
+    page_js_load_time_s = 4
 
 class linkScraping:
     min_offer_price = 0

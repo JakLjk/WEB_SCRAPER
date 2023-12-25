@@ -1,22 +1,24 @@
-
 import zmq
 import logging
 import time
-
-import pickle
+from selenium.common.exceptions import TimeoutException
 
 from config.TEMP_unique_key import TEST_KEY
-from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout
+from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout, DeadOfferLink
 from config.metadata import clientRequests, commonRequests
 from config.client_config import clientConfig, linkScraping, seleniumConfig
+from my_loggers.setup_screenshot import save_screenshot_to_folder_as
+from my_loggers.save_raw_txt import save_raw
 from shared.methods.hashed_pickle import sign_message, verified_message
 from shared.objects.communication import Communication
+from shared.objects.webpage import Webpage
 from .oto_links_scrapper.get_link_scrape_logic import get_link_for_range_price, \
                                                         get_num_of_pages, \
                                                         get_link_for_all_pages_in_range_price, \
                                                         get_offer_links_from_specified_page
 from .oto_links_scrapper.get_offer_raw_html_logic import get_offer_page_raw
 from .oto_links_scrapper.scraper_utils import pick_selenium_driver
+from .oto_links_scrapper.parse_raw_offer_html import get_offer_details
 
 
 main_log = logging.getLogger("MAIN_LOG")
@@ -81,44 +83,68 @@ def launch_mine_offers():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect(f"tcp://{clientConfig.server_ip_port}")
-
     comm = Communication()
-
+    
+    driver = pick_selenium_driver(seleniumConfig.browser_type,
+                                seleniumConfig.run_headless)
     while True:
-        client_log.info("Requesting link to parse from server")
-        comm.set_comm_details(
-            command=clientRequests.get_link)
-        
-        start_time = time.time()
-        signed_message = sign_message(TEST_KEY, comm)
-        client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
-
-        client_log.info("Sending request to server...")
-        socket.send_json(signed_message)
-        client_log.info("Message sent")
-
-        client_log.info("Received data from server")
-        received_data = socket.recv_json()
-        start_time = time.time()
-        message:Communication = verified_message(TEST_KEY, received_data)
-        client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
-
-        link_to_scrape = message.get_data()
         try:
-            page_raw = get_offer_page_raw(link_to_scrape)
-        except UnsupportedPageLayout as upl:
-            client_log.error(f"Script encountered unsupported webpage type when scraping raw data.")
-            client_log.info(f"Skipping current link...")
-            client_log.debug(f"Link which encountered the issue: {link_to_scrape}")
-            client_log.debug(f"{upl}")
-            continue
+            client_log.info("Requesting link to parse from server")
+            comm.set_comm_details(
+                command=clientRequests.get_link)
+            
+            start_time = time.time()
+            signed_message = sign_message(TEST_KEY, comm)
+            client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+
+            client_log.info("Sending request to server...")
+            socket.send_json(signed_message)
+            client_log.info("Message sent")
+
+            client_log.info("Received data from server")
+            received_data = socket.recv_json()
+            start_time = time.time()
+            message:Communication = verified_message(TEST_KEY, received_data)
+            client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+
+            client_log.info("Unwrapping message data")
+            message = message.get_data()
+            link_id = message["link_id"]
+            link_to_scrape = message["link"]
+            client_log.debug(f"Link to scrape: {link_to_scrape}")
+            try:
+                client_log.info("Fetching webpage raw data")
+                page_raw = get_offer_page_raw(driver, link_to_scrape)
+            except UnsupportedPageLayout as upl:
+                client_log.error(f"Script encountered unsupported webpage type when scraping raw data.")
+                client_log.info(f"Skipping current link...")
+                client_log.debug(f"Link which encountered the issue: {link_to_scrape}")
+                client_log.debug(f"{upl}")
+                continue
+            except TimeoutException as te:
+                client_log.exception(F"Failed to load offer page - saving print screen with details")
+                driver.get_screenshot_as_file(save_screenshot_to_folder_as("timeout_when_fetching_offer_raw", "png"))
+                driver.quit()
+                raise te
+            client_log.info("Creating Webpage object")
+            webpage = Webpage(link=link_to_scrape)
+            webpage.raw_data = page_raw
+            client_log.info("Parsing raw page HTML into proper data scheme")
+            # Save last page raw html to see what went wrong if code crashes
+            save_raw("raw_1", page_raw)
+            try:
+                get_offer_details(webpage, page_raw)
+            except DeadOfferLink:
+                path = save_screenshot_to_folder_as("dead_link", "png")
+                driver.get_screenshot_as_file(path)
+                client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
+                client_log.warning(f"Screenshot of this page can be found here: {path}")
+                continue
+            print(webpage)
+        except Exception as e:
+            client_log.critical(f"There was unidentified exception during script runtime - quitting.")
+            driver.quit()
+            raise e
+    driver.quit()
 
         
-
-
-
-
-
-        # Do Further Stuff with received link...
-
-        time.sleep(3)

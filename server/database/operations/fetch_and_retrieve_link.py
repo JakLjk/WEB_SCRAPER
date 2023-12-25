@@ -8,7 +8,7 @@ def get_link_from_db(session:scoped_session):
 
     link_row = session.query(links).filter(
         links.c.linkWasScraped==False,
-        links.c.linkIsNowScraped==False).one()
+        links.c.linkIsNowScraped==False).first()
 
     session.query(links).filter(links.c.idL == link_row.idL).update({"linkIsNowScraped":True})
     session.commit()

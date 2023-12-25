@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.remote.webdriver import WebDriver
 from bs4 import BeautifulSoup
 
-from .scraper_utils import pick_selenium_driver, close_popup
+from .scraper_utils import close_popup
 from my_loggers.setup_screenshot import save_screenshot_to_folder_as
 from config.client_config import seleniumConfig
 

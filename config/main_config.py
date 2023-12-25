@@ -1,5 +1,7 @@
+import logging
+
 class loggerConfig:
-    pass
+    display_log_level = logging.DEBUG
 
 class serverConfig:
     bindPort = 4123
