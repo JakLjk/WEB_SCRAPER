@@ -1,12 +1,19 @@
-
-
+from shared.methods.object_size import get_object_size
 
 class Webpage:
     def __str__(self):
         try: 
-            len_raw = len(self.raw_data)
+            size_raw = get_object_size(self.raw_data)
         except TypeError:
-            len_raw = "N/A"
+            size_raw = "N/A"
+        try: 
+            len_details = len(self.details)
+        except TypeError:
+            len_details = "N/A"
+        try: 
+            len_equipment = len(self.equipment)
+        except TypeError:
+            len_equipment = "N/A"
         return (f"\nWebpage object:\n"
                f"  Offer Title: {self.offer_title}\n"
                f"  Offer ID: {self.offer_id}\n"
@@ -14,8 +21,10 @@ class Webpage:
                f"  Price: {self.price}\n"
                f"  Currency: {self.currency}\n"
                f"  Coordiantes: {self.coordinates}\n"
+               f"  Number of details: {len_details}\n"
+               f"  Number of listed equipments: {len_equipment}\n"
                f"  Link: {self.link}\n"
-               f"  Number of signs in raw data: {len_raw}\n")
+               f"  Size of raw data: {size_raw}MB\n")
             
     def __init__(self, link:str) -> None:
         self.link:str = link
@@ -27,5 +36,10 @@ class Webpage:
         self.currency:str = None
         self.description:str = None
         self.coordinates:str = None
+
+        self.details:dict = {}
+        self.equipment:list = []
+
+
 
 

@@ -4,7 +4,7 @@ import time
 from selenium.common.exceptions import TimeoutException
 
 from config.TEMP_unique_key import TEST_KEY
-from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout, DeadOfferLink
+from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout, DeadOfferLink, NoMapElementLoaded
 from config.metadata import clientRequests, commonRequests
 from config.client_config import clientConfig, linkScraping, seleniumConfig
 from my_loggers.setup_screenshot import save_screenshot_to_folder_as
@@ -103,6 +103,7 @@ def launch_mine_offers():
 
             client_log.info("Received data from server")
             received_data = socket.recv_json()
+            client_log.debug("Verifying message...")
             start_time = time.time()
             message:Communication = verified_message(TEST_KEY, received_data)
             client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
@@ -118,28 +119,32 @@ def launch_mine_offers():
             except UnsupportedPageLayout as upl:
                 client_log.error(f"Script encountered unsupported webpage type when scraping raw data.")
                 client_log.info(f"Skipping current link...")
-                client_log.debug(f"Link which encountered the issue: {link_to_scrape}")
+                client_log.debug(f"Link which encountered the issue: [{link_to_scrape}]")
                 client_log.debug(f"{upl}")
+                # TODO notify server
                 continue
-            except TimeoutException as te:
-                client_log.exception(F"Failed to load offer page - saving print screen with details")
-                driver.get_screenshot_as_file(save_screenshot_to_folder_as("timeout_when_fetching_offer_raw", "png"))
-                driver.quit()
-                raise te
+            except DeadOfferLink:
+                path = save_screenshot_to_folder_as("dead_link", "png")
+                driver.get_screenshot_as_file(path)
+                client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
+                client_log.warning(f"Screenshot of this page can be found here: [{path}]")
+                # TODO notify server
+                continue
+            except TimeoutException:
+                path = save_screenshot_to_folder_as("timeout_when_fetching_offer_raw", "png")
+                driver.get_screenshot_as_file(path)
+                client_log.exception(F"Failed to load offer page. Print Screen: [{path}]")
+                client_log.info("Passing information to server about unsuccessful scraping attempt")
+                # TODO notify server
+                client_log.info(f"Proceeding to scrape next link...")
+                continue
             client_log.info("Creating Webpage object")
             webpage = Webpage(link=link_to_scrape)
             webpage.raw_data = page_raw
             client_log.info("Parsing raw page HTML into proper data scheme")
             # Save last page raw html to see what went wrong if code crashes
             save_raw("raw_1", page_raw)
-            try:
-                get_offer_details(webpage, page_raw)
-            except DeadOfferLink:
-                path = save_screenshot_to_folder_as("dead_link", "png")
-                driver.get_screenshot_as_file(path)
-                client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
-                client_log.warning(f"Screenshot of this page can be found here: {path}")
-                continue
+            get_offer_details(webpage, page_raw)
             print(webpage)
         except Exception as e:
             client_log.critical(f"There was unidentified exception during script runtime - quitting.")
