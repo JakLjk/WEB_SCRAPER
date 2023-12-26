@@ -4,7 +4,9 @@ import time
 from selenium.common.exceptions import TimeoutException
 
 from config.TEMP_unique_key import TEST_KEY
-from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout, DeadOfferLink, NoMapElementLoaded
+from config.exceptions import ServerNegativeResponse, UnsupportedPageLayout, \
+    DeadOfferLink, NoMapElementLoaded, ServerResponseError, NoResponseFromServer, \
+    UnrecognizedServerResponse
 from config.metadata import clientRequests, commonRequests
 from config.client_config import clientConfig, linkScraping, seleniumConfig
 from my_loggers.setup_screenshot import save_screenshot_to_folder_as
@@ -100,9 +102,9 @@ def launch_mine_offers():
             client_log.info("Sending request to server...")
             socket.send_json(signed_message)
             client_log.info("Message sent")
-
-            client_log.info("Received data from server")
+            
             received_data = socket.recv_json()
+            client_log.info("Received data from server")
             client_log.debug("Verifying message...")
             start_time = time.time()
             message:Communication = verified_message(TEST_KEY, received_data)
@@ -121,21 +123,56 @@ def launch_mine_offers():
                 client_log.info(f"Skipping current link...")
                 client_log.debug(f"Link which encountered the issue: [{link_to_scrape}]")
                 client_log.debug(f"{upl}")
-                # TODO notify server
+                comm.set_comm_details(
+                    clientRequests.push_scraped_link_to_server,
+                    clientRequests.status_failed,
+                    None,
+                    {"link_id":link_id,
+                    "fail_reason":clientRequests.failed_reason_unsupported_page_layout})
+                client_log.info(f"Passing information to server about failed scraping...")
+                start_time = time.time()
+                signed_message = sign_message(TEST_KEY, comm)
+                client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+                socket.send_json(signed_message)
+                client_log.info(f"Server notified.")
+                client_log.info(f"Proceeding to scrape next link...")
                 continue
             except DeadOfferLink:
                 path = save_screenshot_to_folder_as("dead_link", "png")
                 driver.get_screenshot_as_file(path)
                 client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
                 client_log.warning(f"Screenshot of this page can be found here: [{path}]")
-                # TODO notify server
+                comm.set_comm_details(
+                    clientRequests.push_scraped_link_to_server,
+                    clientRequests.status_failed,
+                    None,
+                    {"link_id":link_id,
+                    "fail_reason":clientRequests.failed_reason_dead_link})
+                client_log.info(f"Passing information to server about failed scraping...")
+                start_time = time.time()
+                signed_message = sign_message(TEST_KEY, comm)
+                client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+                socket.send_json(signed_message)
+                client_log.info(f"Server notified.")
+                client_log.info(f"Proceeding to scrape next link...")
                 continue
             except TimeoutException:
                 path = save_screenshot_to_folder_as("timeout_when_fetching_offer_raw", "png")
                 driver.get_screenshot_as_file(path)
                 client_log.exception(F"Failed to load offer page. Print Screen: [{path}]")
                 client_log.info("Passing information to server about unsuccessful scraping attempt")
-                # TODO notify server
+                comm.set_comm_details(
+                    clientRequests.push_scraped_link_to_server,
+                    clientRequests.status_failed,
+                    None,
+                    {"link_id":link_id,
+                    "fail_reason":clientRequests.failed_reason_scrape_timeout})
+                client_log.info(f"Passing information to server about failed scraping...")
+                start_time = time.time()
+                signed_message = sign_message(TEST_KEY, comm)
+                client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+                socket.send_json(signed_message)
+                client_log.info(f"Server notified.")
                 client_log.info(f"Proceeding to scrape next link...")
                 continue
             client_log.info("Creating Webpage object")
@@ -144,8 +181,42 @@ def launch_mine_offers():
             client_log.info("Parsing raw page HTML into proper data scheme")
             # Save last page raw html to see what went wrong if code crashes
             save_raw("raw_1", page_raw)
+            # scrape offer details from the raw data 
             get_offer_details(webpage, page_raw)
+            # print object in terminal to see some general information about this specific pffer
             print(webpage)
+            client_log.debug(f"Creating message for server...")
+            # creating message with status ok (if script went to this place 
+            # that meants there were no exceptions during scraping process)
+            comm.set_comm_details(
+                clientRequests.push_scraped_link_to_server,
+                clientRequests.status_ok,
+                webpage,
+                {"link_id":link_id})
+            start_time = time.time()
+            signed_message = sign_message(TEST_KEY, comm)
+            client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+            client_log.info(f"Sending message to server...")
+            # sending message to server containing the offer information
+            socket.send_json(signed_message)
+            client_log.info(f"Message sent")
+            client_log.info(f"Waiting for response...")
+            # waiting for feedback from server to see if the offer data was properly inserted into database
+            received_data = socket.recv_json()
+            client_log.info(f"Received message from server")
+            start_time = time.time()
+            message:Communication = verified_message(TEST_KEY, received_data)
+            client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+            # Check what kind of response did server send back to see if the offer data was properly 
+            # inserted into the database
+            if message.get_command() == commonRequests.query_not_ok:
+                error_message = message.get_additional_variables()["response_details"]
+                raise ServerResponseError(f"Server returned negative response: ''{error_message}''")
+            elif message.get_command() == commonRequests.query_ok:
+                client_log.info("Server returned 'o.k.' status for offer's database insertion.")
+                continue
+            else:
+                raise UnrecognizedServerResponse("Server did not respond in defined way.") 
         except Exception as e:
             client_log.critical(f"There was unidentified exception during script runtime - quitting.")
             driver.quit()

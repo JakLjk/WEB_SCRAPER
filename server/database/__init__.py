@@ -9,10 +9,13 @@ links = Table(
     "links",
     meta,
     Column("idL", Integer, autoincrement=True, primary_key=True),
+    Column("isDuplicateOfAlreadyExistingLink", Boolean),
+    Column("failedTries", Integer),
     Column("link", Text),
     Column("linkWasScraped", Boolean),
-    Column("linkIsNowScraped", Text),
-    Column("linkInsertDate", DATETIME))
+    Column("linkIsNowBeingScraped", Boolean),
+    Column("linkInsertDate", DATETIME),
+    Column("statusDescription", Text))
 
 offers = Table(
     "offers",
@@ -27,9 +30,3 @@ offers = Table(
     Column("coordinates", Text),
     Column("description", Text))
 
-# offer_details = Table(
-#     "offer_details",
-#     meta,
-#     Column("idOD", Integer, autoincrement=True, primary_key=True)
-#     Column("")
-# )
