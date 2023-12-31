@@ -24,3 +24,6 @@ class UnrecognizedServerResponse(Exception):
 
 class UnrecognizedClientResponse(Exception):
     pass
+
+class NoScrapeableLinkInDB(Exception):
+    pass

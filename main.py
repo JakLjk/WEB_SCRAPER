@@ -18,8 +18,10 @@ def main():
     
     elif "-c" in user_args:
         main_log.info("Initialising client")
-        # launch_client(work_type="mineLinks")
-        launch_client(work_type="mineOffers")
+        if "-l" in user_args:
+            launch_client(work_type="mineLinks")
+        elif "-o" in user_args:
+            launch_client(work_type="mineOffers")
 
     else:
         main_log.info("No proper arguments passed - quitting")
@@ -28,16 +30,16 @@ def main():
 if __name__ == "__main__":
     main()
 
-# TODO after mining links finishes do cleanup of duplicates.    
 
-# TODO worker and DB connector
-    
+# TODO fix offer title (it displays wrong value)
+
+# TODO Filling of offer database tables with data 
+
 # TODO logger size limits
     
 # TODO add proper password prompt (to generate hash based on it)
     
-# TODO json based configs
-    
 # TODO separate loggers for each thread
+    
 
-# Client and webpage class that will be sent between client and server
+# Notes for future - make compound class that takes care of all data sending / message signing / errors etc...

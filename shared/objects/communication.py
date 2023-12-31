@@ -18,7 +18,7 @@ class Communication():
                          data_to_pass=None,
                          additional_variables:dict=None):
         self._command=None
-        self._status=None
+        self._status=status
         self._data=None
         self._data_obj_name=None
 

@@ -112,6 +112,10 @@ def launch_mine_offers():
 
             client_log.info("Unwrapping message data")
             message = message.get_data()
+            if message == None:
+                client_log.error(f"Server returned None as link, requesting new link in {clientConfig.wait_time_for_new_link_s} seconds ")
+                time.sleep(clientConfig.wait_time_for_new_link_s)
+                continue
             link_id = message["link_id"]
             link_to_scrape = message["link"]
             client_log.debug(f"Link to scrape: {link_to_scrape}")
@@ -136,12 +140,32 @@ def launch_mine_offers():
                 socket.send_json(signed_message)
                 client_log.info(f"Server notified.")
                 client_log.info(f"Proceeding to scrape next link...")
+                # ########################
+                client_log.info(f"Waiting for response...")
+                # waiting for feedback from server to see if the offer data was properly inserted into database
+                received_data = socket.recv_json()
+                client_log.info(f"Received message from server")
+                start_time = time.time()
+                message:Communication = verified_message(TEST_KEY, received_data)
+                client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+                # Check what kind of response did server send back to see if the offer data was properly 
+                # inserted into the database
+                if message.get_command() == commonRequests.query_not_ok:
+                    error_message = message.get_additional_variables()["response_details"]
+                    raise ServerResponseError(f"Server returned negative response: ''{error_message}''")
+                elif message.get_command() == commonRequests.query_ok:
+                    client_log.info("Server returned 'o.k.' status for offer's database insertion.")
+                    continue
+                else:
+                    raise UnrecognizedServerResponse("Server did not respond in defined way.") 
+                # ########################
                 continue
             except DeadOfferLink:
-                path = save_screenshot_to_folder_as("dead_link", "png")
+                path = save_screenshot_to_folder_as(f"dead_link_{link_id}_", "png")
                 driver.get_screenshot_as_file(path)
                 client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
                 client_log.warning(f"Screenshot of this page can be found here: [{path}]")
+                client_log.debug(f"Link ID: {link_id}")
                 comm.set_comm_details(
                     clientRequests.push_scraped_link_to_server,
                     clientRequests.status_failed,
@@ -155,6 +179,25 @@ def launch_mine_offers():
                 socket.send_json(signed_message)
                 client_log.info(f"Server notified.")
                 client_log.info(f"Proceeding to scrape next link...")
+                # ########################
+                client_log.info(f"Waiting for response...")
+                # waiting for feedback from server to see if the offer data was properly inserted into database
+                received_data = socket.recv_json()
+                client_log.info(f"Received message from server")
+                start_time = time.time()
+                message:Communication = verified_message(TEST_KEY, received_data)
+                client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+                # Check what kind of response did server send back to see if the offer data was properly 
+                # inserted into the database
+                if message.get_command() == commonRequests.query_not_ok:
+                    error_message = message.get_additional_variables()["response_details"]
+                    raise ServerResponseError(f"Server returned negative response: ''{error_message}''")
+                elif message.get_command() == commonRequests.query_ok:
+                    client_log.info("Server returned 'o.k.' status for offer's database insertion.")
+                    continue
+                else:
+                    raise UnrecognizedServerResponse("Server did not respond in defined way.") 
+                # ########################
                 continue
             except TimeoutException:
                 path = save_screenshot_to_folder_as("timeout_when_fetching_offer_raw", "png")
@@ -174,6 +217,25 @@ def launch_mine_offers():
                 socket.send_json(signed_message)
                 client_log.info(f"Server notified.")
                 client_log.info(f"Proceeding to scrape next link...")
+                # ########################
+                client_log.info(f"Waiting for response...")
+                # waiting for feedback from server to see if the offer data was properly inserted into database
+                received_data = socket.recv_json()
+                client_log.info(f"Received message from server")
+                start_time = time.time()
+                message:Communication = verified_message(TEST_KEY, received_data)
+                client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+                # Check what kind of response did server send back to see if the offer data was properly 
+                # inserted into the database
+                if message.get_command() == commonRequests.query_not_ok:
+                    error_message = message.get_additional_variables()["response_details"]
+                    raise ServerResponseError(f"Server returned negative response: ''{error_message}''")
+                elif message.get_command() == commonRequests.query_ok:
+                    client_log.info("Server returned 'o.k.' status for offer's database insertion.")
+                    continue
+                else:
+                    raise UnrecognizedServerResponse("Server did not respond in defined way.") 
+                # ########################
                 continue
             client_log.info("Creating Webpage object")
             webpage = Webpage(link=link_to_scrape)

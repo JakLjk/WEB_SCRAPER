@@ -11,7 +11,7 @@ def setup_logger(name:str, filename:str=None):
     
     if filename:
         path_to_log_folder = pathlib.Path(__file__).parent.resolve()
-
+        print(f"Logger |{name}| path: {filename}")
         fh = logging.FileHandler(f"{path_to_log_folder}/{filename}")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(m_formatter)
