@@ -15,8 +15,16 @@ links = Table(
     Column("link", Text),
     Column("linkWasScraped", Boolean),
     Column("linkIsNowBeingScraped", Boolean),
-    Column("linkInsertDate", DATETIME),
+    Column("linkInsertDate", TIMESTAMP),
     Column("statusDescription", Text))
+
+raw_data = Table(
+    "offer_raw_data",
+    meta,
+    Column("idO", Integer, autoincrement=True, primary_key=True),
+    Column("idL", Integer, ForeignKey("links.idL")),
+    Column("offerRawDataInsertDate", TIMESTAMP),
+    Column("rawData", LONGTEXT))
 
 offers = Table(
     "offers",
@@ -25,7 +33,6 @@ offers = Table(
     Column("idL", Integer, ForeignKey("links.idL")),
     Column("insertDate", TIMESTAMP),
     Column("link", Text),
-    Column("rawHTML", LONGTEXT),
     Column("title",Text),
     Column("price", Text),
     Column("currency", Text),

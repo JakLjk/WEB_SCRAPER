@@ -7,8 +7,6 @@ def currently_available_column_names(session, table_name) -> set:
     result = session.execute(sql)
     returning_values:set = set()
     for res in result:
-        print(res)
-        print(type(res))
         returning_values.add(res[0])
     if result:
         return returning_values
@@ -23,7 +21,8 @@ def add_column(session, table_name, column_name, column_datatype):
     session.commit()
 
 
-def insert_dict_values_to_db(session, table_name, data_dict:dict):
+def insert_dict_values_to_db(session, link_id, table_name, data_dict:dict, auto_commit=True):
+    data_dict["idL"] = link_id
     col_names_list = list(data_dict.keys())
     col_values_list = list(data_dict.values())
 
@@ -34,6 +33,6 @@ def insert_dict_values_to_db(session, table_name, data_dict:dict):
     sql = \
     f"""INSERT INTO {table_name} ({columns_parsed}) 
     VALUES ({values_parsed})"""
-    print(sql)
     session.execute(text(sql))
-    session.commit()
+    if auto_commit:
+        session.commit()

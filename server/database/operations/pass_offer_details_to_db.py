@@ -1,7 +1,7 @@
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.dialects.mysql import insert
 
-from .. import links, offers
+from .. import links, offers, raw_data
 from shared.objects.webpage import Webpage
 from config.server_config import dbConfig
 from config.exceptions import InsertDetailsToDBFailed, InsertEquipmentToDBFailed, InsertMainOfferDataFailed
@@ -11,7 +11,6 @@ from .common_operations import currently_available_column_names, add_column, ins
 def pass_offer_details_to_db(Session:scoped_session,
                             link_db_entry_id:int,
                             webpage_object:Webpage):
-    
 
     main_data = [{
         "link":webpage_object.link,
@@ -21,74 +20,62 @@ def pass_offer_details_to_db(Session:scoped_session,
         "currency":webpage_object.currency,
         "coordinates":webpage_object.coordinates,
         "description":webpage_object.description}]
-    
 
+    raw_data_list = [{
+        "idL":link_db_entry_id,
+        "rawData":webpage_object.raw_data}]
     
+    # Checking which details columns are already in database and adding the ones that are missing
+    # in comparison to the new offer data that is to be uploaded to db
+    active_session = Session()
+    details_table_name = dbConfig.offer_details_table_name
+    details_to_add_to_db = webpage_object.details
+    details_to_add_to_db = {replace_space_to_floor(key):val for key, val in details_to_add_to_db.items()}
+    details_to_add_to_db = {normalize_column_names(key):val for key, val in details_to_add_to_db.items()}
+    detail_names = set(details_to_add_to_db.keys())
+    curr_columns = currently_available_column_names(active_session, details_table_name)
+    columns_to_add = detail_names - curr_columns
+    for column_name in columns_to_add:
+        add_column(active_session, details_table_name, column_name, "text")
+    details_to_add_to_db["idL"]=link_db_entry_id
+    active_session.close()
+
+    # Checking which equipment columns are already in database and adding the ones that are missing
+    # in comparison to the new offer data that is to be uploaded to db
+    active_session = Session()
+    equipment_table_name=dbConfig.offer_equipment_table_name
+    equipment=webpage_object.equipment
+    # Only if there is equipment to be added
+    if equipment:
+        equipment=[replace_space_to_floor(eq) for eq in equipment]
+        equipment=[normalize_column_names(eq) for eq in equipment]
+        equipment_columns = set(equipment)
+        equipment_columns_in_db=currently_available_column_names(active_session, equipment_table_name)
+        columns_to_add = equipment_columns - equipment_columns_in_db
+        for column_name in columns_to_add:
+            add_column(active_session, equipment_table_name, column_name, "text")
+        equipment_to_add_to_db={eq:True for eq in equipment}
+    else:
+        equipment_to_add_to_db=None
+    active_session.close()
+    
+    # Creating transaction session so that are inserts are appended together
     with Session() as connection:
-
         connection.execute(insert(offers), main_data)
+        connection.execute(insert(raw_data), raw_data_list)
+        insert_dict_values_to_db(connection,
+                                link_db_entry_id,
+                                details_table_name,
+                                details_to_add_to_db,
+                                auto_commit=False)
+        # Add equipment only if such is available
+        if equipment_to_add_to_db:
+            insert_dict_values_to_db(connection,
+                        link_db_entry_id,
+                        equipment_table_name,
+                        equipment_to_add_to_db,
+                        auto_commit=False)
         connection.commit()
-        print("END-------")
-
-
-    # try:
-    # # Pass data to main offer table
-    #     main_data = [{
-    #         "link":webpage_object.link,
-    #         "title":webpage_object.offer_title,
-    #         "price":webpage_object.price,
-    #         "currency":webpage_object.currency,
-    #         "coordinates":webpage_object.coordinates,
-    #         "description":webpage_object.description}]
-    #     session.execute(insert(dbConfig.offer_main_table_name), main_data)
-    # except Exception as ex:
-    #     InsertMainOfferDataFailed(ex)
-
-    # # Pass data to 'raw data table'
-    # try:
-    #     raw_data = [{
-    #         "raw_data":webpage_object.raw_data}]
-    #     session.execute(insert(dbConfig.offer_raw_data_table_name))
-    #     session.commit()
-    # except Exception
-
-    # try:
-    #     # Pass data to details table
-    #     table_name=dbConfig.offer_details_table_name
-    #     details = webpage_object.details
-    #     details = {replace_space_to_floor(key):val for key, val in details.items()}
-    #     details = {normalize_column_names(key):val for key, val in details.items()}
-    #     detail_names = set(details.keys())
-    #     curr_columns = currently_available_column_names(session, table_name)
-    #     columns_to_add = detail_names - curr_columns
-    #     for column_name in columns_to_add:
-    #         add_column(session, table_name, column_name, "text")
-    #     details["idL"]=link_db_entry_id
-    #     insert_dict_values_to_db(session,
-    #                         table_name,
-    #                         details)
-    # except Exception as ex:
-    #     raise InsertDetailsToDBFailed(ex)
-        
-    # try:
-    #     # Pass data to equiplent table
-    #     table_name=dbConfig.offer_equipment_table_name
-    #     equipment=webpage_object.equipment
-    #     if equipment:
-    #         equipment=[replace_space_to_floor(eq) for eq in equipment]
-    #         equipment=[normalize_column_names(eq) for eq in equipment]
-    #         equipment_columns = set(equipment)
-    #         equipment_columns_in_db=currently_available_column_names(session, table_name)
-    #         columns_to_add = equipment_columns - equipment_columns_in_db
-    #         for column_name in columns_to_add:
-    #             add_column(session, table_name, column_name, "text")
-    #         equipment_dict={eq:True for eq in equipment}
-    #         insert_dict_values_to_db(session, table_name, equipment_dict)
-    # except Exception as ex:
-    #     raise InsertEquipmentToDBFailed(ex)
-        
-
-
 
 
 def replace_space_to_floor(string:str) -> str:
