@@ -23,7 +23,7 @@ def add_column(session, table_name, column_name, column_datatype):
     session.commit()
 
 
-def insert_values_to_db(session, table_name, data_dict:dict):
+def insert_dict_values_to_db(session, table_name, data_dict:dict):
     col_names_list = list(data_dict.keys())
     col_values_list = list(data_dict.values())
 

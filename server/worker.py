@@ -26,7 +26,7 @@ def init_worker_routine(workers_url:str,
     socket = context.socket(zmq.REP)
     socket.connect(workers_url)
     
-    active_session = Session()
+    # active_session = Session()
 
     comm = Communication()
 
@@ -43,7 +43,7 @@ def init_worker_routine(workers_url:str,
             server_log.info(f"Client is requesting link from database")
             server_log.info(f"Fetching link from database")
             try: 
-                link = get_link_from_db(active_session)
+                link = get_link_from_db(Session)
             except NoResultFound:
                 server_log.error("No result found when trying to get link to scrape from database.")
                 link = None
@@ -60,7 +60,7 @@ def init_worker_routine(workers_url:str,
         elif requested_command == clientRequests.pass_link_batch:
             server_log.info("Client is passing link batch")
             server_log.info(f"Passing {len(message.get_data())} links to the database")
-            pass_link_to_db(active_session, message.get_data())
+            pass_link_to_db(Session, message.get_data())
             comm.set_comm_details(commonRequests.query_ok)
             signed_message=sign_message(TEST_KEY, comm)
             socket.send_json(signed_message)
@@ -81,13 +81,13 @@ def init_worker_routine(workers_url:str,
                     print(webpage)
                     # Update link so that it won't be used again in scraping process.
                     server_log.info("Updating link table with information about link's scraping process")
-                    update_link(active_session,
+                    update_link(Session,
                                     link_id,
                                     "Link scrapped successfully")
                     server_log.info(f"Link status updated")
                     server_log.info("Appeding offer to offer's tables:")
                     try:
-                        pass_offer_details_to_db(session=active_session,
+                        pass_offer_details_to_db(Session=Session,
                                                  link_db_entry_id=link_id,
                                                  webpage_object=webpage)
                     except Exception as ex:
@@ -101,12 +101,12 @@ def init_worker_routine(workers_url:str,
                     if fail_reason == clientRequests.failed_reason_dead_link:
                         server_log.info(f"Failed status because the link was dead")
                         server_log.debug(f"Link ID: {link_id}")
-                        update_link(active_session,
+                        update_link(Session,
                                     link_id,
                                     "Link is dead")
                     elif fail_reason == clientRequests.failed_reason_scrape_timeout:
                         server_log.info(f"Failed status because of link timeout")
-                        update_link(active_session,
+                        update_link(Session,
                                     link_id,
                                     "Link failed because of timeout",
                                     set_link_as_scraped=False,
@@ -114,7 +114,7 @@ def init_worker_routine(workers_url:str,
                                     add_1_to_failed_tries=True)
                     elif fail_reason == clientRequests.failed_reason_unsupported_page_layout:
                         server_log.info(f"Failed status because the offer page had unsupported layout")
-                        update_link(active_session,
+                        update_link(Session,
                                     link_id,
                                     "Unsupported page layout")
                 else:
@@ -142,8 +142,6 @@ def init_worker_routine(workers_url:str,
             server_log.info("Sending message to client...")
             socket.send_json(signed_message)
             server_log.info("Message sent")
-
-        active_session.close()
 
 
 

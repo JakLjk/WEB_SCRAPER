@@ -5,6 +5,7 @@ class dbConfig:
     db_username="root"
     db_password="casaos"
 
+    offer_main_table_name="offers"
     offer_details_table_name="offer_details"
     offer_equipment_table_name="offer_equipment"
     offer_raw_data_table_name="offer_raw_data"

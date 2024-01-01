@@ -1,4 +1,5 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, Date, Text, Boolean, DATETIME
+from sqlalchemy import MetaData, Table, Column, Integer, String, Date, Text, Boolean, DATETIME, TIMESTAMP
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.mysql import LONGTEXT
 
 
@@ -21,7 +22,8 @@ offers = Table(
     "offers",
     meta,
     Column("idO", Integer, autoincrement=True, primary_key=True),
-    Column("insertDate", DATETIME),
+    Column("idL", Integer, ForeignKey("links.idL")),
+    Column("insertDate", TIMESTAMP),
     Column("link", Text),
     Column("rawHTML", LONGTEXT),
     Column("title",Text),

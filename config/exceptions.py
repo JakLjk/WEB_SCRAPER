@@ -27,3 +27,15 @@ class UnrecognizedClientResponse(Exception):
 
 class NoScrapeableLinkInDB(Exception):
     pass
+
+class InsertDetailsToDBFailed(Exception):
+    pass
+
+class InsertEquipmentToDBFailed(Exception):
+    pass
+
+class InsertMainOfferDataFailed(Exception):
+    pass
+
+class InsertRawOfferDataFailed(Exception):
+    pass
