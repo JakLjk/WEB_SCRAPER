@@ -37,10 +37,14 @@ def launch_server():
     workers = context.socket(zmq.DEALER)
     workers.bind(workers_url)
 
+    from shared.objects.counter import CommonCouter
+    c = CommonCouter()
+
     for i in range(serverConfig.maxThreads): 
         serv_log.debug(f"Initialising thread |{i}|")
         thread = threading.Thread(target=init_worker_routine, args=(workers_url,
-                                                                    Session))
+                                                                    Session,
+                                                                    c))
         thread.daemon = True
         thread.start()
     

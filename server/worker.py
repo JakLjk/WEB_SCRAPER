@@ -18,7 +18,8 @@ server_log = logging.getLogger("SERV_LOG")
 
 def init_worker_routine(workers_url:str, 
                         Session:scoped_session,
-                        context: zmq.Context = None):
+                        c,
+                        context: zmq.Context = None,):
     
     context = context or zmq.Context.instance()
 
@@ -29,7 +30,7 @@ def init_worker_routine(workers_url:str,
     # active_session = Session()
 
     comm = Communication()
-
+    
     while True:
         received_data = socket.recv_json()
         server_log.info(f"Received new message from client")
@@ -58,8 +59,10 @@ def init_worker_routine(workers_url:str,
             socket.send_json(signed_message)
 
         elif requested_command == clientRequests.pass_link_batch:
+            num_of_links = len(message.get_data())
+            c.num_links += num_of_links
             server_log.info("Client is passing link batch")
-            server_log.info(f"Passing {len(message.get_data())} links to the database")
+            server_log.info(f"Passing {num_of_links} links to the database. Total: [{c.num_links}]")
             pass_link_to_db(Session, message.get_data())
             comm.set_comm_details(commonRequests.query_ok)
             signed_message=sign_message(TEST_KEY, comm)

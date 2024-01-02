@@ -18,7 +18,11 @@ def main():
     
     elif "-c" in user_args:
         main_log.info("Initialising client")
-        if "-l" in user_args:
+        if "-l" in user_args and "-n" in user_args:
+            launch_client(work_type="mineLinks",
+                start_from_price_boundary=user_args[user_args.index("-n")+1],
+                end_on_price_boundary=user_args[user_args.index("-n")+2])
+        elif "-l" in user_args:
             launch_client(work_type="mineLinks")
         elif "-o" in user_args:
             launch_client(work_type="mineOffers")

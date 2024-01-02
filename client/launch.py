@@ -27,14 +27,18 @@ main_log = logging.getLogger("MAIN_LOG")
 client_log = logging.getLogger("CLIENT_LOG")
 
 
-def launch_client(work_type:str):
+def launch_client(work_type:str,
+                start_from_price_boundary: int | None = None,
+                end_on_price_boundary:int | None = None):
     if work_type == "mineLinks":
-        launch_mine_links()
+        launch_mine_links(start_from_price_boundary,
+                          end_on_price_boundary)
     elif work_type == "mineOffers":
         launch_mine_offers()
 
 
-def launch_mine_links():
+def launch_mine_links(start_from_price_boundary: int | None = None,
+                      end_on_price_boundary:int | None = None):
     client_log.info(f"Client will try to establish connection with server {clientConfig.server_ip_port}")
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
@@ -44,6 +48,10 @@ def launch_mine_links():
     min_price = linkScraping.min_offer_price
     max_price = linkScraping.max_offer_price
     price_interval = linkScraping.price_intervals
+    if start_from_price_boundary:
+        min_price = int(start_from_price_boundary)
+    if end_on_price_boundary:
+        max_price = int(end_on_price_boundary)
     client_log.info(f"Scraping offer links")
     client_log.debug(f"Page filters details: min price: {min_price} | max price: {max_price} | price interval: {price_interval}")
     client_log.info(f"Creating driver session for links scrapper.")
@@ -283,6 +291,6 @@ def launch_mine_offers():
             client_log.critical(f"There was unidentified exception during script runtime - quitting.")
             driver.quit()
             raise e
-    driver.quit()
-
+        
+client_log.info("Script has finished working")
         
