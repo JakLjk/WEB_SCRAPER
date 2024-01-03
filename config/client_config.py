@@ -1,5 +1,5 @@
 class clientConfig:
-    server_ip_port:str = "localhost:4123"
+    server_ip_port:str = "192.168.0.24:4123"
     # How many seconds should script wait before equesting new link
     # from server after previous query returned None
     wait_time_for_new_link_s = 10
