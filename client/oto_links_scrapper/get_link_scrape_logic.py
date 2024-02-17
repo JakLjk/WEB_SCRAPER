@@ -51,7 +51,7 @@ def get_offer_links_from_specified_page(driver:WebDriver, link:str) -> list:
     WebDriverWait(driver, seleniumConfig.page_js_load_time_s).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.e17gkxda1.ooa-1l0bag1.er34gjf0')))
 
     soup = BeautifulSoup(source, "html.parser")
-    link_boxes = soup.find_all("h1", {"class":"e1ajxysh9 ooa-1ed90th er34gjf0"})
+    link_boxes = soup.find_all("h1", {"class":"e1oqyyyi9 ooa-1ed90th er34gjf0"})
     scraped_links = [elem.find("a")["href"] for elem in link_boxes]
     if len(scraped_links) == 0:
         driver.get_screenshot_as_file(save_screenshot_to_folder_as("zero_links_error", "png"))

@@ -29,7 +29,7 @@ raw_data = Table(
 offers = Table(
     "offers",
     meta,
-    Column("idO", Integer, autoincrement=True, primary_key=True),
+    Column("idOF", Integer, autoincrement=True, primary_key=True),
     Column("idL", Integer, ForeignKey("links.idL")),
     Column("insertDate", TIMESTAMP),
     Column("link", Text),
