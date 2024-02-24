@@ -213,9 +213,9 @@ def launch_mine_offers():
                     # ########################
                     continue
                 except DeadOfferLink:
-                    driver.quit()
                     path = save_screenshot_to_folder_as(f"dead_link_{link_id}_", "png")
                     driver.get_screenshot_as_file(path)
+                    driver.quit()
                     client_log.warning(f"Current link is dead (offer was probably removed from webpage)")
                     client_log.warning(f"Screenshot of this page can be found here: [{path}]")
                     client_log.debug(f"Link ID: {link_id}")
