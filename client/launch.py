@@ -258,9 +258,7 @@ def launch_mine_offers():
                     driver.get_screenshot_as_file(path)
                     client_log.exception(F"Failed to load offer page. Print Screen: [{path}]")
                     
-
                     driver.quit()
-
 
                     client_log.error(f"Caught Webdriver exception: {wde}")
                     driver.quit()
@@ -298,12 +296,14 @@ def launch_mine_offers():
                             continue
                         else:
                             raise UnrecognizedServerResponse("Server did not respond in defined way.") 
-                    raise UnresolvedWebpageTimeout(f"Could not get proper webpage connection on offer {link_to_scrape} despite {retry} retires")
+                    client_log.error("Webdriver exception forced script to retry....")
+                    time.sleep(timeout_wait)
+                    continue   
+                    # raise UnresolvedWebpageTimeout(f"Could not get proper webpage connection on offer {link_to_scrape} despite {retry} retires")]
+                
                     # client_log.error("Webdriver exception forced script to retry....")
                     # time.sleep(timeout_wait)
-                    # continue    
-
-                    
+                    # continue                    
                     # comm.set_comm_details(
                     #     clientRequests.push_scraped_link_to_server,
                     #     clientRequests.status_failed,
