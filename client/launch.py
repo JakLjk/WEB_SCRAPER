@@ -90,6 +90,25 @@ def launch_mine_links(start_from_price_boundary: int | None = None,
             try:
                 links = get_offer_links_from_specified_page(driver, link)
                 negative_webpage_response = False
+
+                client_log.info(f"Found {len(links)} links. Passing them to server...")
+                comm.set_comm_details(command=clientRequests.pass_link_batch,
+                                    data_to_pass=links)
+                start_time = time.time()
+                signed_message = sign_message(TEST_KEY, comm)
+                client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+                socket.send_json(signed_message)
+                client_log.info("Message sent")
+                received_data = socket.recv_json()
+                start_time = time.time()
+                message:Communication = verified_message(TEST_KEY, received_data)
+                client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+                if message.get_command() == commonRequests.query_not_ok:
+                    driver.quit()
+                    raise ServerNegativeResponse(f"Server Returned Negative Statement: {message.get_data}")
+                else:
+                    continue
+                
             except TimeoutException:
                 client_log.exception("Timeout exception while trying to load webpage with links list")
                 retry +=1
@@ -99,23 +118,7 @@ def launch_mine_links(start_from_price_boundary: int | None = None,
                 time.sleep(timeout_wait)
                 continue
             
-            client_log.info(f"Found {len(links)} links. Passing them to server...")
-            comm.set_comm_details(command=clientRequests.pass_link_batch,
-                                  data_to_pass=links)
-            start_time = time.time()
-            signed_message = sign_message(TEST_KEY, comm)
-            client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
-            socket.send_json(signed_message)
-            client_log.info("Message sent")
-            received_data = socket.recv_json()
-            start_time = time.time()
-            message:Communication = verified_message(TEST_KEY, received_data)
-            client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
-            if message.get_command() == commonRequests.query_not_ok:
-                driver.quit()
-                raise ServerNegativeResponse(f"Server Returned Negative Statement: {message.get_data}")
-            else:
-                continue
+
     driver.quit()
 
 
