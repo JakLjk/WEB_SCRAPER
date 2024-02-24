@@ -10,6 +10,8 @@ class seleniumConfig:
     wait_before_script = 0.
     popup_load_wait_time_s = 3
     page_js_load_time_s = 6
+    timeout_exception_retry_time_s = 45
+    timeout_exception_max_retries = 5
 
 class linkScraping:
     min_offer_price = 0

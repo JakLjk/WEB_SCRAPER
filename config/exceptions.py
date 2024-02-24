@@ -39,3 +39,6 @@ class InsertMainOfferDataFailed(Exception):
 
 class InsertRawOfferDataFailed(Exception):
     pass
+
+class UnresolvedWebpageTimeout(Exception):
+    pass
