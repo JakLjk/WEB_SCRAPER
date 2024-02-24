@@ -82,41 +82,41 @@ def launch_mine_links(start_from_price_boundary: int | None = None,
             raise ValueError(f"Number of pages on filter {min_p} - {max_p} is too high!")
         client_log.info(f"There are {num_of_pages} offer pages in price scope {min_p} - {max_p}")
 
-        for link, page_num in get_link_for_all_pages_in_range_price(min_p, max_p, num_of_pages):
-            client_log.info(f"Scraping page {num_of_pages - page_num + 1} / {num_of_pages} with links in price range {min_p} - {max_p} ")
-        negative_webpage_response = True
-        retry = 0
-        while negative_webpage_response:
-            try:
-                links = get_offer_links_from_specified_page(driver, link)
-                negative_webpage_response = False
+    for link, page_num in get_link_for_all_pages_in_range_price(min_p, max_p, num_of_pages):
+        client_log.info(f"Scraping page {num_of_pages - page_num + 1} / {num_of_pages} with links in price range {min_p} - {max_p} ")
+    negative_webpage_response = True
+    retry = 0
+    while negative_webpage_response:
+        try:
+            links = get_offer_links_from_specified_page(driver, link)
+            negative_webpage_response = False
 
-                client_log.info(f"Found {len(links)} links. Passing them to server...")
-                comm.set_comm_details(command=clientRequests.pass_link_batch,
-                                    data_to_pass=links)
-                start_time = time.time()
-                signed_message = sign_message(TEST_KEY, comm)
-                client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
-                socket.send_json(signed_message)
-                client_log.info("Message sent")
-                received_data = socket.recv_json()
-                start_time = time.time()
-                message:Communication = verified_message(TEST_KEY, received_data)
-                client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
-                if message.get_command() == commonRequests.query_not_ok:
-                    driver.quit()
-                    raise ServerNegativeResponse(f"Server Returned Negative Statement: {message.get_data}")
-                else:
-                    continue
-                
-            except TimeoutException:
-                client_log.exception("Timeout exception while trying to load webpage with links list")
-                retry +=1
-                if retry > timeout_retries: 
-                    raise UnresolvedWebpageTimeout(f"Could not establish proper webpage connection after {timeout_retries} retries")
-                client_log.error("Retrying...")
-                time.sleep(timeout_wait)
+            client_log.info(f"Found {len(links)} links. Passing them to server...")
+            comm.set_comm_details(command=clientRequests.pass_link_batch,
+                                data_to_pass=links)
+            start_time = time.time()
+            signed_message = sign_message(TEST_KEY, comm)
+            client_log.debug(f"Signing message took {round(time.time() - start_time, 4)} seconds.")
+            socket.send_json(signed_message)
+            client_log.info("Message sent")
+            received_data = socket.recv_json()
+            start_time = time.time()
+            message:Communication = verified_message(TEST_KEY, received_data)
+            client_log.debug(f"Verifying message took {round(time.time() - start_time, 4)} seconds.")
+            if message.get_command() == commonRequests.query_not_ok:
+                driver.quit()
+                raise ServerNegativeResponse(f"Server Returned Negative Statement: {message.get_data}")
+            else:
                 continue
+            
+        except TimeoutException:
+            client_log.exception("Timeout exception while trying to load webpage with links list")
+            retry +=1
+            if retry > timeout_retries: 
+                raise UnresolvedWebpageTimeout(f"Could not establish proper webpage connection after {timeout_retries} retries")
+            client_log.error("Retrying...")
+            time.sleep(timeout_wait)
+            continue
             
 
     driver.quit()
