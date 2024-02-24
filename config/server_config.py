@@ -3,7 +3,7 @@ class dbConfig:
     db_host="192.168.0.226:3306"
     db_name="otomoto_db"
     db_username="root"
-    db_password="casaos"
+    db_password="IDRist213769$$8922"
 
     offer_main_table_name="offers"
     offer_details_table_name="offer_details"

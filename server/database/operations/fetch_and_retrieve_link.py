@@ -34,6 +34,7 @@ def get_link_from_db(Session:scoped_session):
 
 def pass_link_to_db(Session:scoped_session, links_from_client:list):
     session = Session()
+    print(links)
     data = [{"link":l,
              "isDuplicateOfAlreadyExistingLink": 
                 check_if_link_already_in_db(Session, l),
